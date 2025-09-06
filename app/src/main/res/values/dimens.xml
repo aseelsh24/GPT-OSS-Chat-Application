@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="message_margin_near">16dp</dimen>
+    <dimen name="message_margin_far">64dp</dimen>
+    <dimen name="message_padding">12dp</dimen>
+    <dimen name="message_vertical_spacing">2dp</dimen>
+    <dimen name="message_corner_radius">16dp</dimen>
+    <dimen name="input_padding">16dp</dimen>
+    <dimen name="input_margin">8dp</dimen>
+    <dimen name="message_text_size">16sp</dimen>
+    <dimen name="time_text_size">11sp</dimen>
+    <dimen name="message_elevation">2dp</dimen>
+    <dimen name="input_elevation">4dp</dimen>
+</resources>

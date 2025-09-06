@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">GPT-OSS Chat</string>
+    <string name="type_message">Type your message...</string>
+    <string name="send">Send</string>
+    <string name="sending">Sending...</string>
+    <string name="user">You</string>
+    <string name="bot">GPT-OSS</string>
+    <string name="error_network">Network error. Please check your connection.</string>
+    <string name="error_api">API error. Please try again later.</string>
+    <string name="welcome_message">Hello! I\'m GPT-OSS, your AI assistant. How can I help you today?</string>
+    <string name="no_internet">No internet connection available</string>
+    <string name="retry">Retry</string>
+    <string name="connection_timeout">Connection timeout. Please try again.</string>
+</resources>
