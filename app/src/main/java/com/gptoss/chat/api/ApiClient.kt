@@ -12,6 +12,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 
 class ApiClient {
@@ -78,6 +79,9 @@ class ApiClient {
                 throw ApiException("API request failed with code: ${response.code()}", response.code())
             }
 
+        } catch (e: SocketTimeoutException) {
+            Log.e(TAG, "Server timeout", e)
+            throw ServerTimeoutException("Server timed out", e)
         } catch (e: ApiException) {
             throw e
         } catch (e: Exception) {
@@ -90,8 +94,13 @@ class ApiClient {
         return try {
             sendMessage(message)
         } catch (e: Exception) {
-            Log.w(TAG, "Primary API call failed, trying fallback", e)
-            sendMessageDirectHttp(message)
+            when (e) {
+                is ApiException, is ServerTimeoutException -> {
+                    Log.w(TAG, "Primary API call failed, trying fallback", e)
+                    sendMessageDirectHttp(message)
+                }
+                else -> throw e
+            }
         }
     }
 
@@ -131,6 +140,8 @@ class ApiClient {
 
             throw ApiException("Direct HTTP request failed: ${response.code}", response.code)
 
+        } catch (e: SocketTimeoutException) {
+            throw ServerTimeoutException("Fallback server timed out", e)
         } catch (e: Exception) {
             throw NetworkException("Fallback network error: ${e.message}", e)
         }
@@ -139,3 +150,5 @@ class ApiClient {
 
 class ApiException(message: String, val code: Int) : Exception(message)
 class NetworkException(message: String, cause: Throwable? = null) : Exception(message, cause)
+class NoInternetException(message: String) : Exception(message)
+class ServerTimeoutException(message: String, cause: Throwable? = null) : Exception(message, cause)

@@ -12,11 +12,10 @@ class ApiManager(private val context: Context) {
     suspend fun sendChatMessage(message: String): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
             if (!isNetworkAvailable()) {
-                Result.failure(NetworkException("No internet connection"))
-            } else {
-                val response = apiClient.sendMessageWithFallback(message)
-                Result.success(response)
+                throw NoInternetException("No internet connection")
             }
+            val response = apiClient.sendMessageWithFallback(message)
+            Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)
         }
