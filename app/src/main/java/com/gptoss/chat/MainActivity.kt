@@ -9,6 +9,8 @@ import com.gptoss.chat.adapters.MessageAdapter
 import com.gptoss.chat.api.ApiException
 import com.gptoss.chat.api.ApiManager
 import com.gptoss.chat.api.NetworkException
+import com.gptoss.chat.api.NoInternetException
+import com.gptoss.chat.api.ServerTimeoutException
 import com.gptoss.chat.databinding.ActivityMainBinding
 import com.gptoss.chat.models.Message
 import com.gptoss.chat.utils.MessageUtils
@@ -95,6 +97,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleApiError(exception: Throwable) {
         val errorMessage = when (exception) {
+            is NoInternetException -> {
+                Toast.makeText(this, getString(R.string.no_internet), Toast.LENGTH_SHORT).show()
+                "Please check your internet connection and try again."
+            }
+            is ServerTimeoutException -> {
+                Toast.makeText(this, getString(R.string.connection_timeout), Toast.LENGTH_SHORT).show()
+                "The server is taking a long time to respond. Please try again in a moment."
+            }
             is NetworkException -> {
                 Toast.makeText(this, getString(R.string.error_network), Toast.LENGTH_SHORT).show()
                 "Sorry, I'm having trouble connecting to the server. Please check your internet connection and try again."

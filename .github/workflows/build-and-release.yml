@@ -8,7 +8,6 @@ on:
 
 env:
   JAVA_VERSION: '17'
-  GRADLE_VERSION: '8.9'
 
 jobs:
   build:
@@ -27,35 +26,9 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: Cache Gradle Dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          gradle-${{ runner.os }}-
-
     - name: Setup Gradle
-      uses: gradle/gradle-build-action@v3
+      uses: gradle/actions/setup-gradle@v3
 
-    - name: Make gradlew executable
-      run: chmod +x ./gradlew || echo "gradlew not found, will generate"
-
-    - name: Generate Gradle Wrapper if missing
-      run: |
-        if [ ! -f "./gradlew" ]; then
-          echo "Gradle wrapper not found, generating..."
-          gradle wrapper --gradle-version=${{ env.GRADLE_VERSION }}
-          chmod +x ./gradlew
-          echo "Gradle wrapper generated successfully"
-        else
-          echo "Gradle wrapper found, continuing..."
-        fi
-
-    - name: Verify Gradle Installation
-      run: ./gradlew --version
 
     - name: Decode Android Keystore
       if: github.ref == 'refs/heads/main'
@@ -130,7 +103,7 @@ jobs:
           
           ### 🔧 Technical Details:
           - **API Integration:** Hugging Face amd/gpt-oss-120b-chatbot
-          - **Build System:** Gradle ${{ env.GRADLE_VERSION }}
+          - **Build System:** Gradle 9.0.0
           - **Target SDK:** 34 (Android 14)
           - **Minimum SDK:** 24 (Android 7.0)
           
