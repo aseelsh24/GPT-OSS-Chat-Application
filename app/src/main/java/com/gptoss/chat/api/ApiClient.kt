@@ -10,10 +10,37 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
+// Data classes for OpenRouter API
+data class OpenRouterRequest(
+    val model: String,
+    val messages: List<Message>,
+    val max_tokens: Int,
+    val temperature: Double
+)
+
+data class Message(
+    val role: String,
+    val content: String
+)
+
+data class OpenRouterResponse(
+    val choices: List<Choice>
+)
+
+data class Choice(
+    val message: ResponseMessage
+)
+
+data class ResponseMessage(
+    val content: String
+)
+
+
 class ApiClient {
     companion object {
-        private const val BASE_URL = "https://amd-gpt-oss-120b-chatbot.hf.space/"
-        private const val CHAT_ENDPOINT = "chat"  // الـ endpoint الصحيح
+        private const val OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+        private const val API_KEY = "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"
+        private const val GRADIO_BASE_URL = "https://amd-gpt-oss-120b-chatbot.hf.space/"
         private const val TAG = "ApiClient"
     }
 
@@ -27,28 +54,30 @@ class ApiClient {
 
     suspend fun sendMessage(
         message: String,
-        systemPrompt: String = "You are a helpful assistant.",
-        temperature: Double = 0.7
+        systemPrompt: String = "أنت مساعد عربي ذكي، أجب بدقة واختصار.",
+        temperature: Double = 0.8
     ): String = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "Sending message to /chat endpoint: $message")
+            Log.d(TAG, "Sending message to OpenRouter API: $message")
 
-            // تنسيق البيانات حسب المطلوب
-            val requestData = mapOf(
-                "message" to message,
-                "system_prompt" to systemPrompt,
-                "temperature" to temperature
+            val requestPayload = OpenRouterRequest(
+                model = "openai/gpt-3.5-turbo",
+                messages = listOf(
+                    Message("system", systemPrompt),
+                    Message("user", message)
+                ),
+                max_tokens = 250,
+                temperature = temperature
             )
 
-            val jsonRequest = gson.toJson(requestData)
-            val requestBody = jsonRequest.toRequestBody("application/json".toMediaType())
+            val jsonPayload = gson.toJson(requestPayload)
+            val requestBody = jsonPayload.toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
-                .url("${BASE_URL}${CHAT_ENDPOINT}")
-                .post(requestBody)
+                .url(OPENROUTER_API_URL)
+                .addHeader("Authorization", "Bearer $API_KEY")
                 .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "application/json")
-                .addHeader("User-Agent", "GPT-OSS-Chat/1.0")
+                .post(requestBody)
                 .build()
 
             val response = okHttpClient.newCall(request).execute()
@@ -58,25 +87,13 @@ class ApiClient {
             Log.d(TAG, "Response body: $responseBody")
 
             if (response.isSuccessful && responseBody != null) {
-                // إذا كان الرد مباشر (string)
-                return@withContext if (responseBody.startsWith("\"") && responseBody.endsWith("\"")) {
-                    // إزالة علامات الاقتباس من JSON string
-                    responseBody.removeSurrounding("\"").replace("\\\"", "\"")
-                } else {
-                    // محاولة تحليل JSON
-                    try {
-                        val responseMap = gson.fromJson(responseBody, Map::class.java) as? Map<String, Any>
-                        responseMap?.get("response")?.toString() ?: responseBody
-                    } catch (e: Exception) {
-                        responseBody
-                    }
-                }
+                val openRouterResponse = gson.fromJson(responseBody, OpenRouterResponse::class.java)
+                val content = openRouterResponse.choices.firstOrNull()?.message?.content
+                return@withContext content ?: "No response content found."
             } else {
-                throw ApiException("Chat API request failed: ${response.code} - $responseBody", response.code)
+                throw ApiException("OpenRouter API request failed: ${response.code} - $responseBody", response.code)
             }
 
-        } catch (e: ApiException) {
-            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Network error", e)
             throw NetworkException("Network error: ${e.message}", e)
@@ -87,14 +104,14 @@ class ApiClient {
         return try {
             sendMessage(message)
         } catch (e: Exception) {
-            Log.w(TAG, "Chat API failed, trying Gradio client method", e)
+            Log.w(TAG, "OpenRouter API failed, trying Gradio client method", e)
             sendMessageGradioClient(message)
         }
     }
 
     private suspend fun sendMessageGradioClient(message: String): String = withContext(Dispatchers.IO) {
         try {
-            // طريقة Gradio Client البديلة
+            // This is a fallback and uses a different service, keeping it for now
             val requestData = mapOf(
                 "fn_index" to 0,
                 "data" to listOf(message, "You are a helpful assistant.", 0.7),
@@ -105,7 +122,7 @@ class ApiClient {
             val requestBody = jsonRequest.toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
-                .url("${BASE_URL}run/predict")
+                .url("${GRADIO_BASE_URL}run/predict")
                 .post(requestBody)
                 .addHeader("Content-Type", "application/json")
                 .build()
@@ -124,7 +141,7 @@ class ApiClient {
 
         } catch (e: Exception) {
             Log.e(TAG, "Gradio client method error", e)
-            // الخيار الأخير - رد محاكي
+            // Last resort - simulated response
             return@withContext generateSimulatedResponse(message)
         }
     }
